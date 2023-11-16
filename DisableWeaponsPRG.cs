@@ -1,19 +1,21 @@
 ﻿using CounterStrikeSharp.API.Core;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace DisableWeaponsPRG;
 public class DisableWeaponsPRG : BasePlugin
 {
     public override string ModuleAuthor => "sphaxa";
     public override string ModuleName => "DisableWeapons for PRG";
-    public override string ModuleVersion => "v1.0.0";
+    public override string ModuleVersion => "v1.0.1";
 
-    private List<Config>? _config = new();
+    private Config _config = new(false, new List<string>{"weapon_awp"});
 
     public override void Load(bool hotReload)
     {
         var configPath = Path.Join(ModuleDirectory, "DisableWeaponsConfig.json");
-        _config = !File.Exists(configPath) ? CreateConfig(configPath) : JsonSerializer.Deserialize<List<Config>>(File.ReadAllText(configPath));
+        _config = !File.Exists(configPath) ? CreateConfig(configPath) : JsonSerializer.Deserialize<Config>(File.ReadAllText(configPath));
 
         RegisterEventHandler<EventItemPickup>(OnItemPickup, HookMode.Post);
         RegisterEventHandler<EventItemPurchase>(OnItemPurchase, HookMode.Post);
@@ -94,18 +96,17 @@ public class DisableWeaponsPRG : BasePlugin
         return HookResult.Continue;
     }
 
-    private static List<Config> CreateConfig(string configPath)
+    private static Config CreateConfig(string configPath)
     {
-        var data = new List<Config> { new() { Name = "weapon_awp"} };
+        var data = new Config(false, new List<string> { "weapon_awp" });
         File.WriteAllText(configPath, JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }));
         return data;
     }
 
     private bool IsBlocked(string DesignerName)
     {
-        var wep = _config?.FirstOrDefault(k => k.Name == DesignerName);
-        if (wep == null) return false;
-        return true;
+        bool exists = _config.Names.Contains(DesignerName);
+        return _config.Whitelist ? !exists : exists;
     }
 }
 
@@ -119,5 +120,17 @@ public class WeaponMeta
 
 public class Config
 {
-    public string? Name { get; set; }
+    [JsonPropertyName("Whitelist")]
+    public required bool Whitelist { get; set; }
+
+    [JsonPropertyName("Names")]
+    public List<string>? Names { get; set; }
+
+    [JsonConstructor]
+    [SetsRequiredMembers]
+    public Config(bool whitelist, List<string> names)
+    {
+        Whitelist = whitelist;
+        Names = names;
+    }
 }
