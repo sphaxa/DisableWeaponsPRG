@@ -6,7 +6,7 @@ public class DisableWeaponsPRG : BasePlugin
 {
     public override string ModuleAuthor => "sphaxa";
     public override string ModuleName => "DisableWeapons for PRG";
-    public override string ModuleVersion => "v1.0.0";
+    public override string ModuleVersion => "v1.1.0";
 
     private List<Config>? _config = new();
 
@@ -58,7 +58,7 @@ public class DisableWeaponsPRG : BasePlugin
         {
             if (invwep.Value.AttributeManager.Item.ItemDefinitionIndex != @event.Defindex) continue;
             invwep.Value.Remove();
-            NativeAPI.IssueClientCommand((int)@event.Userid.EntityIndex!.Value.Value - 1, "lastinv");
+            NativeAPI.IssueClientCommand((int)@event.Userid.Index - 1, "lastinv");
         }
 
         return HookResult.Continue;
